@@ -1,41 +1,42 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.has');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import XYZ from '../src/ol/source/XYZ.js';
 
+const key = 'get_your_own_D6rA4zTHduk6KOKTXzGB';
+const attributions = '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>';
 
-var map1 = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: new ol.source.OSM()
-    })
-  ],
-  renderer: 'dom',
-  target: 'domMap',
-  view: new ol.View({
-    center: [0, 0],
-    zoom: 1
+const roadLayer = new TileLayer({
+  source: new XYZ({
+    attributions: attributions,
+    url: 'https://api.maptiler.com/maps/streets/{z}/{x}/{y}.png?key=' + key,
+    tileSize: 512,
+    maxZoom: 22
   })
 });
 
-var map2 = new ol.Map({
-  target: 'canvasMap',
-  layers: map1.getLayers(),
-  view: map1.getView()
+const aerialLayer = new TileLayer({
+  source: new XYZ({
+    attributions: attributions,
+    url: 'https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=' + key,
+    maxZoom: 20
+  })
 });
 
-if (ol.has.WEBGL) {
-  var map3 = new ol.Map({
-    renderer: 'webgl',
-    target: 'webglMap',
-    layers: map1.getLayers(),
-    view: map1.getView()
-  });
-} else {
-  var info = document.getElementById('no-webgl');
-  /**
-   * display error message
-   */
-  info.style.display = '';
-}
+const view = new View({
+  center: [-6655.5402445057125, 6709968.258934638],
+  zoom: 13
+});
+
+const map1 = new Map({
+  target: 'roadMap',
+  layers: [roadLayer],
+  view: view
+});
+
+const map2 = new Map({
+  target: 'aerialMap',
+  layers: [aerialLayer],
+  view: view
+});

@@ -1,46 +1,47 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.format.KML');
-goog.require('ol.layer.Tile');
-goog.require('ol.layer.Vector');
-goog.require('ol.proj');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.Vector');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import KML from '../src/ol/format/KML.js';
+import {Tile as TileLayer, Vector as VectorLayer} from '../src/ol/layer.js';
+import XYZ from '../src/ol/source/XYZ.js';
+import VectorSource from '../src/ol/source/Vector.js';
 
-var projection = ol.proj.get('EPSG:3857');
+const key = 'get_your_own_D6rA4zTHduk6KOKTXzGB';
+const attributions = '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>';
 
-var raster = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
-    imagerySet: 'Aerial',
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF'
+const raster = new TileLayer({
+  source: new XYZ({
+    attributions: attributions,
+    url: 'https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=' + key,
+    maxZoom: 20
   })
 });
 
-var vector = new ol.layer.Vector({
-  source: new ol.source.Vector({
+const vector = new VectorLayer({
+  source: new VectorSource({
     url: 'data/kml/2012-02-10.kml',
-    format: new ol.format.KML()
+    format: new KML()
   })
 });
 
-var map = new ol.Map({
+const map = new Map({
   layers: [raster, vector],
   target: document.getElementById('map'),
-  view: new ol.View({
+  view: new View({
     center: [876970.8463461736, 5859807.853963373],
-    projection: projection,
+    projection: 'EPSG:3857',
     zoom: 10
   })
 });
 
-var displayFeatureInfo = function(pixel) {
-  var features = [];
+const displayFeatureInfo = function(pixel) {
+  const features = [];
   map.forEachFeatureAtPixel(pixel, function(feature) {
     features.push(feature);
   });
   if (features.length > 0) {
-    var info = [];
-    var i, ii;
+    const info = [];
+    let i, ii;
     for (i = 0, ii = features.length; i < ii; ++i) {
       info.push(features[i].get('name'));
     }
@@ -56,7 +57,7 @@ map.on('pointermove', function(evt) {
   if (evt.dragging) {
     return;
   }
-  var pixel = map.getEventPixel(evt.originalEvent);
+  const pixel = map.getEventPixel(evt.originalEvent);
   displayFeatureInfo(pixel);
 });
 

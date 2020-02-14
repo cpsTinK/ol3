@@ -1,44 +1,56 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.layer.Tile');
-goog.require('ol.proj');
-goog.require('ol.proj.Projection');
-goog.require('ol.source.Zoomify');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import Zoomify from '../src/ol/source/Zoomify.js';
 
-var imgWidth = 9911;
-var imgHeight = 6100;
+const imgWidth = 4000;
+const imgHeight = 3000;
 
-var imgCenter = [imgWidth / 2, -imgHeight / 2];
+const zoomifyUrl = 'https://ol-zoomify.surge.sh/zoomify/';
 
-// Maps always need a projection, but Zoomify layers are not geo-referenced, and
-// are only measured in pixels.  So, we create a fake projection that the map
-// can use to properly display the layer.
-var proj = new ol.proj.Projection({
-  code: 'ZOOMIFY',
-  units: 'pixels',
-  extent: [0, 0, imgWidth, imgHeight]
-});
-
-var source = new ol.source.Zoomify({
-  url: 'http://vips.vtech.fr/cgi-bin/iipsrv.fcgi?zoomify=' +
-      '/mnt/MD1/AD00/plan_CHU-4HD-01/FOND.TIF/',
+const source = new Zoomify({
+  url: zoomifyUrl,
   size: [imgWidth, imgHeight],
-  crossOrigin: 'anonymous'
+  crossOrigin: 'anonymous',
+  zDirection: -1 // Ensure we get a tile with the screen resolution or higher
+});
+const extent = source.getTileGrid().getExtent();
+
+const retinaPixelRatio = 2;
+const retinaSource = new Zoomify({
+  url: zoomifyUrl,
+  size: [imgWidth, imgHeight],
+  crossOrigin: 'anonymous',
+  zDirection: -1, // Ensure we get a tile with the screen resolution or higher
+  tilePixelRatio: retinaPixelRatio, // Display retina tiles
+  tileSize: 256 / retinaPixelRatio // from a higher zoom level
 });
 
-var map = new ol.Map({
-  layers: [
-    new ol.layer.Tile({
-      source: source
-    })
-  ],
+const layer = new TileLayer({
+  source: source
+});
+
+const map = new Map({
+  layers: [layer],
   target: 'map',
-  view: new ol.View({
-    projection: proj,
-    center: imgCenter,
-    zoom: 2,
-    // constrain the center: center cannot be set outside
-    // this extent
-    extent: [0, -imgHeight, imgWidth, 0]
+  view: new View({
+    // adjust zoom levels to those provided by the source
+    resolutions: layer.getSource().getTileGrid().getResolutions(),
+    // constrain the center: center cannot be set outside this extent
+    extent: extent,
+    constrainOnlyCenter: true
   })
 });
+map.getView().fit(extent);
+
+const control = document.getElementById('zoomifyProtocol');
+control.addEventListener('change', function(event) {
+  const value = event.currentTarget.value;
+  if (value === 'zoomify') {
+    layer.setSource(source);
+  } else if (value === 'zoomifyretina') {
+    layer.setSource(retinaSource);
+  }
+});
+
+

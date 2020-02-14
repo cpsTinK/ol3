@@ -1,19 +1,22 @@
-goog.provide('ol.test.control.Control');
+import Map from '../../../../src/ol/Map.js';
+import Control from '../../../../src/ol/control/Control.js';
 
 describe('ol.control.Control', function() {
-  var map, control;
+  let map, control;
 
   beforeEach(function() {
-    map = new ol.Map({
+    map = new Map({
       target: document.createElement('div')
     });
-    var element = document.createElement('DIV');
-    control = new ol.control.Control({element: element});
+    const element = document.createElement('div');
+    control = new Control({element: element});
     control.setMap(map);
   });
 
   afterEach(function() {
-    map.dispose();
+    disposeMap(map);
+    map = null;
+    control = null;
   });
 
   describe('dispose', function() {
@@ -27,28 +30,51 @@ describe('ol.control.Control', function() {
 describe('ol.control.Control\'s target', function() {
   describe('target as string or element', function() {
     it('transforms target from string to element', function() {
-      var target = document.createElement('div');
+      const target = document.createElement('div');
       target.id = 'mycontrol';
       document.body.appendChild(target);
-      var ctrl = new ol.control.Control({target: 'mycontrol'});
+      const ctrl = new Control({target: 'mycontrol'});
       expect(ctrl.target_.id).to.equal('mycontrol');
       ctrl.dispose();
+      target.parentNode.removeChild(target);
     });
     it('accepts element for target', function() {
-      var target = document.createElement('div');
+      const target = document.createElement('div');
       target.id = 'mycontrol';
       document.body.appendChild(target);
-      var ctrl = new ol.control.Control({target: target});
+      const ctrl = new Control({target: target});
       expect(ctrl.target_.id).to.equal('mycontrol');
       ctrl.dispose();
+      target.parentNode.removeChild(target);
     });
     it('ignores non-existing target id', function() {
-      var ctrl = new ol.control.Control({target: 'doesnotexist'});
+      const ctrl = new Control({target: 'doesnotexist'});
       expect(ctrl.target_).to.equal(null);
       ctrl.dispose();
     });
   });
 });
 
-goog.require('ol.Map');
-goog.require('ol.control.Control');
+describe('ol.control.Control\'s event target', function() {
+  it('is the Control when the Control uses the default target', function(done) {
+    const ctrl = new Control({element: document.createElement('div')});
+    ctrl.on('test-event', function(e) {
+      expect(e.target).to.be(ctrl);
+      done();
+    });
+    ctrl.dispatchEvent('test-event');
+    ctrl.dispose();
+  });
+  it('is the Control when the Control has a custom target', function(done) {
+    const ctrl = new Control({
+      element: document.createElement('div'),
+      target: document.createElement('div')
+    });
+    ctrl.on('test-event', function(e) {
+      expect(e.target).to.be(ctrl);
+      done();
+    });
+    ctrl.dispatchEvent('test-event');
+    ctrl.dispose();
+  });
+});

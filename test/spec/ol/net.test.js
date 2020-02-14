@@ -1,33 +1,33 @@
-goog.provide('ol.test.net');
-
+import {getUid} from '../../../src/ol/util.js';
+import {jsonp as requestJSONP} from '../../../src/ol/net.js';
 
 describe('ol.net', function() {
 
   describe('jsonp()', function() {
-    var head = ol.global.document.getElementsByTagName('head')[0];
-    var origAppendChild = head.appendChild;
-    var origCreateElement = document.createElement;
-    var origSetTimeout = ol.global.setTimeout;
-    var key, removeChild;
+    const head = document.getElementsByTagName('head')[0];
+    const origAppendChild = head.appendChild;
+    const origCreateElement = document.createElement;
+    const origSetTimeout = setTimeout;
+    let key, removeChild;
 
     function createCallback(url, done) {
       removeChild = sinon.spy();
-      var callback = function(data) {
+      const callback = function(data) {
         expect(data).to.be(url + key);
         expect(removeChild.called).to.be(true);
         done();
       };
-      key = 'olc_' + ol.getUid(callback);
+      key = 'olc_' + getUid(callback);
       return callback;
     }
 
     beforeEach(function() {
-      var element = {};
+      const element = {};
       document.createElement = function(arg) {
         if (arg == 'script') {
           return element;
         } else {
-          return origCreateElement.apply(ol.global.document, arguments);
+          return origCreateElement.apply(document, arguments);
         }
       };
       head.appendChild = function(el) {
@@ -36,13 +36,13 @@ describe('ol.net', function() {
             removeChild: removeChild
           };
           origSetTimeout(function() {
-            ol.global[key](element.src);
+            window[key](element.src);
           }, 0);
         } else {
           origAppendChild.apply(head, arguments);
         }
       };
-      ol.global.setTimeout = function(fn, time) {
+      setTimeout = function(fn, time) {
         origSetTimeout(fn, 100);
       };
     });
@@ -50,15 +50,15 @@ describe('ol.net', function() {
     afterEach(function() {
       document.createElement = origCreateElement;
       head.appendChild = origAppendChild;
-      ol.global.setTimeout = origSetTimeout;
+      setTimeout = origSetTimeout;
     });
 
     it('appends callback param to url, cleans up after call', function(done) {
-      ol.net.jsonp('foo', createCallback('foo?callback=', done));
+      requestJSONP('foo', createCallback('foo?callback=', done));
     });
     it('appends correct callback param to a url with query', function(done) {
-      var callback = createCallback('http://foo/bar?baz&callback=', done);
-      ol.net.jsonp('http://foo/bar?baz', callback);
+      const callback = createCallback('http://foo/bar?baz&callback=', done);
+      requestJSONP('http://foo/bar?baz', callback);
     });
     it('calls errback when jsonp is not executed, cleans up', function(done) {
       head.appendChild = function(element) {
@@ -67,23 +67,20 @@ describe('ol.net', function() {
         };
       };
       function callback() {
-        expect.fail();
+        expect().fail();
       }
       function errback() {
-        expect(ol.global[key]).to.be(undefined);
+        expect(window[key]).to.be(undefined);
         expect(removeChild.called).to.be(true);
         done();
       }
-      ol.net.jsonp('foo', callback, errback);
+      requestJSONP('foo', callback, errback);
     });
     it('accepts a custom callback param', function(done) {
-      var callback = createCallback('foo?mycallback=', done);
-      ol.net.jsonp('foo', callback, undefined, 'mycallback');
+      const callback = createCallback('foo?mycallback=', done);
+      requestJSONP('foo', callback, undefined, 'mycallback');
     });
 
   });
 
 });
-
-
-goog.require('ol.net');

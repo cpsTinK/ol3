@@ -1,48 +1,58 @@
-goog.require('ol.Map');
-goog.require('ol.View');
-goog.require('ol.control');
-goog.require('ol.layer.Tile');
-goog.require('ol.source.BingMaps');
-goog.require('ol.source.OSM');
+import Map from '../src/ol/Map.js';
+import View from '../src/ol/View.js';
+import TileLayer from '../src/ol/layer/Tile.js';
+import OSM from '../src/ol/source/OSM.js';
+import XYZ from '../src/ol/source/XYZ.js';
+import {getRenderPixel} from '../src/ol/render.js';
 
-var osm = new ol.layer.Tile({
-  source: new ol.source.OSM()
+const osm = new TileLayer({
+  source: new OSM()
 });
-var bing = new ol.layer.Tile({
-  source: new ol.source.BingMaps({
-    key: 'AkGbxXx6tDWf1swIhPJyoAVp06H0s0gDTYslNWWHZ6RoPqMpB9ld5FY1WutX8UoF',
-    imagerySet: 'Aerial'
+
+const key = 'get_your_own_D6rA4zTHduk6KOKTXzGB';
+const attributions = '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> ' +
+  '<a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>';
+
+const aerial = new TileLayer({
+  source: new XYZ({
+    attributions: attributions,
+    url: 'https://api.maptiler.com/tiles/satellite/{z}/{x}/{y}.jpg?key=' + key,
+    maxZoom: 20
   })
 });
 
-var map = new ol.Map({
-  layers: [osm, bing],
+const map = new Map({
+  layers: [osm, aerial],
   target: 'map',
-  controls: ol.control.defaults({
-    attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
-      collapsible: false
-    })
-  }),
-  view: new ol.View({
+  view: new View({
     center: [0, 0],
     zoom: 2
   })
 });
 
-var swipe = document.getElementById('swipe');
+const swipe = document.getElementById('swipe');
 
-bing.on('precompose', function(event) {
-  var ctx = event.context;
-  var width = ctx.canvas.width * (swipe.value / 100);
+aerial.on('prerender', function(event) {
+  const ctx = event.context;
+  const mapSize = map.getSize();
+  const width = mapSize[0] * (swipe.value / 100);
+  const tl = getRenderPixel(event, [width, 0]);
+  const tr = getRenderPixel(event, [mapSize[0], 0]);
+  const bl = getRenderPixel(event, [width, mapSize[1]]);
+  const br = getRenderPixel(event, mapSize);
 
   ctx.save();
   ctx.beginPath();
-  ctx.rect(width, 0, ctx.canvas.width - width, ctx.canvas.height);
+  ctx.moveTo(tl[0], tl[1]);
+  ctx.lineTo(bl[0], bl[1]);
+  ctx.lineTo(br[0], br[1]);
+  ctx.lineTo(tr[0], tr[1]);
+  ctx.closePath();
   ctx.clip();
 });
 
-bing.on('postcompose', function(event) {
-  var ctx = event.context;
+aerial.on('postrender', function(event) {
+  const ctx = event.context;
   ctx.restore();
 });
 
